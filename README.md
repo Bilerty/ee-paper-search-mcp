@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server for searching and downloading academic papers from multiple sources. The project follows a free-first strategy: prioritize open and public data sources, support optional API keys when they improve stability or coverage, and keep source-specific connectors extensible for advanced users.
 
+This fork also includes an electrical-engineering workflow layer: a Codex Skill in `skills/ee-paper-search/` plus MCP backend tools for Scopus Search, Elsevier Abstract Retrieval, and journal rank annotation through `paper-rank-proxy`.
+
 ![PyPI](https://img.shields.io/pypi/v/paper-search-mcp.svg) ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![smithery badge](https://smithery.ai/badge/@openags/paper-search-mcp)](https://smithery.ai/server/@openags/paper-search-mcp)
 
@@ -10,6 +12,7 @@ A Model Context Protocol (MCP) server for searching and downloading academic pap
 ## Table of Contents
 
 - [Overview](#overview)
+- [EE Paper Search Workflow](#ee-paper-search-workflow)
 - [Project Principles](#project-principles)
 - [Features](#features)
 - [Source Strategy](#source-strategy)
@@ -35,6 +38,39 @@ A Model Context Protocol (MCP) server for searching and downloading academic pap
 ## Overview
 
 `paper-search-mcp` is a Python-based tool for searching and downloading academic papers from various platforms. It provides tools for searching papers, downloading PDFs, and extracting text, making it ideal for researchers and AI-driven workflows. It can be used as an MCP server (for Claude Desktop and other MCP clients) or as a Claude Code skill with a CLI interface.
+
+## EE Paper Search Workflow
+
+The electrical-engineering customization is **Skill-first, MCP-backed**:
+
+- `skills/ee-paper-search/SKILL.md` is the main Codex workflow for electrical engineering literature search, screening, abstract enrichment, rank annotation, and include/maybe/exclude output.
+- `claude-code/SKILL.md` is preserved as the upstream generic Claude Code/CLI skill.
+- The MCP backend provides stable tools; it does not hard-code the semantic screening decisions.
+
+Default checked sources in the Skill are Scopus, OpenAlex, Crossref, Semantic Scholar, and Unpaywall. IEEE Xplore, ScienceDirect Search, and Web of Science are reserved but disabled until access and tests are ready.
+
+New MCP tools:
+
+| Tool | Purpose |
+| --- | --- |
+| `search_scopus` | Scopus Search first-stage recall |
+| `get_scopus_abstract` | Retrieve one Scopus abstract by EID, DOI, or Scopus ID |
+| `get_scopus_abstracts_batch` | Batch abstract enrichment for title-screened candidates |
+| `get_publication_rank` | Query one journal through `paper-rank-proxy` |
+| `get_publication_ranks_batch` | Batch journal rank annotation |
+| `list_literature_sources` | Show source capabilities and configuration state |
+| `check_ee_paper_search_config` | Redacted configuration diagnostics |
+
+Minimal `.env` for the EE workflow:
+
+```dotenv
+PAPER_SEARCH_MCP_ELSEVIER_API_KEY=
+PAPER_SEARCH_MCP_RANK_PROXY_URL=https://paper-rank.battmng.top
+PAPER_SEARCH_MCP_RANK_PROXY_TOKEN=
+PAPER_SEARCH_MCP_UNPAYWALL_EMAIL=
+```
+
+Do not put `EASYSCHOLAR_SECRET_KEY` in this MCP project. EasyScholar access belongs only inside the deployed `paper-rank-proxy` service.
 
 ## Project Principles
 

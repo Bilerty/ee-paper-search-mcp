@@ -1,0 +1,4 @@
+interface:
+  display_name: "EE Paper Search"
+  short_description: "Electrical engineering literature workflow"
+  default_prompt: "Use $ee-paper-search to find and screen electrical engineering papers with Scopus, open sources, abstracts, and journal ranks."

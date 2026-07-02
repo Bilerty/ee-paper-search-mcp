@@ -52,6 +52,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.uv-cache/
+cache/
 cover/
 
 # Translations
@@ -127,6 +129,8 @@ celerybeat.pid
 # Environments
 .env
 !.env.example
+.env.*
+!.env.example
 .venv
 env/
 venv/
@@ -173,3 +177,9 @@ cython_debug/
 ./test_downloads
 downloads/
 test_downloads/
+
+# Local MCP/agent runtime artifacts
+.agents/
+.codex/
+*.sqlite
+*.sqlite3

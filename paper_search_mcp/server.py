@@ -29,6 +29,10 @@ from .academic_platforms.unpaywall import UnpaywallResolver, UnpaywallSearcher
 from .academic_platforms.zenodo import ZenodoSearcher
 from .academic_platforms.hal import HALSearcher
 from .academic_platforms.ssrn import SSRNSearcher
+from .academic_platforms.scopus import ScopusClient
+from .academic_platforms.elsevier_abstract import ElsevierAbstractClient
+from .rank_proxy import JournalRankClient
+from .source_registry import list_literature_source_status
 from .utils import extract_doi
 
 # from .academic_platforms.hub import SciHubSearcher
@@ -61,6 +65,9 @@ unpaywall_searcher = UnpaywallSearcher(resolver=unpaywall_resolver)
 zenodo_searcher = ZenodoSearcher()
 hal_searcher = HALSearcher()
 ssrn_searcher = SSRNSearcher()
+scopus_client = ScopusClient()
+elsevier_abstract_client = ElsevierAbstractClient()
+journal_rank_client = JournalRankClient()
 # scihub_searcher = SciHubSearcher()
 
 
@@ -352,6 +359,151 @@ async def search_papers(
         "total": len(deduped_papers),
         "raw_total": len(merged_papers),
     }
+
+
+@mcp.tool()
+async def search_scopus(
+    query: str,
+    max_results: int = 25,
+    start: int = 0,
+    sort: str = "-citedby-count",
+    field: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Search Scopus using Elsevier's Scopus Search API.
+
+    Args:
+        query: Scopus query string, for example TITLE-ABS-KEY("power system restoration").
+        max_results: Maximum number of results to return. Scopus Search is capped at 25 per page here.
+        start: Zero-based result offset.
+        sort: Optional Scopus sort expression, default "-citedby-count".
+        field: Optional comma-separated Scopus field list.
+    Returns:
+        Dict with status, total_results, returned count, results, and errors.
+    """
+    return await scopus_client.search(
+        query=query,
+        max_results=max_results,
+        start=start,
+        sort=sort,
+        field=field,
+    )
+
+
+@mcp.tool()
+async def get_scopus_abstract(
+    eid: Optional[str] = None,
+    doi: Optional[str] = None,
+    scopus_id: Optional[str] = None,
+    view: str = "META_ABS",
+) -> Dict[str, Any]:
+    """Retrieve abstract and metadata for one Scopus candidate.
+
+    Args:
+        eid: Preferred Elsevier EID.
+        doi: DOI fallback if EID is unavailable.
+        scopus_id: Scopus ID fallback if EID and DOI are unavailable.
+        view: Elsevier Abstract Retrieval view. Default: META_ABS.
+    Returns:
+        Dict containing abstract, metadata fields, lookup used, status, and errors.
+    """
+    return await elsevier_abstract_client.retrieve(
+        eid=eid,
+        doi=doi,
+        scopus_id=scopus_id,
+        view=view,
+    )
+
+
+@mcp.tool()
+async def get_scopus_abstracts_batch(
+    items: List[Dict[str, Any]],
+    view: str = "META_ABS",
+    max_items: int = 20,
+) -> Dict[str, Any]:
+    """Retrieve abstracts for multiple Scopus candidates.
+
+    Args:
+        items: Candidate dicts containing eid, doi, or scopus_id. EID is preferred.
+        view: Elsevier Abstract Retrieval view. Default: META_ABS.
+        max_items: Maximum number of candidates to enrich in one call.
+    Returns:
+        Dict with one independent result per input candidate.
+    """
+    return await elsevier_abstract_client.retrieve_many(
+        items=items,
+        view=view,
+        max_items=max_items,
+    )
+
+
+@mcp.tool()
+async def get_publication_rank(
+    publication_name: str,
+    force_refresh: bool = False,
+) -> Dict[str, Any]:
+    """Query journal rank for one publication through paper-rank-proxy.
+
+    Args:
+        publication_name: Journal or publication name. ISSN-only lookup is not supported.
+        force_refresh: Whether to bypass the proxy cache.
+    Returns:
+        Rank proxy response or a non-fatal error object.
+    """
+    return await journal_rank_client.get_rank(
+        publication_name=publication_name,
+        force_refresh=force_refresh,
+    )
+
+
+@mcp.tool()
+async def get_publication_ranks_batch(
+    publication_names: List[str],
+    force_refresh: bool = False,
+) -> Dict[str, Any]:
+    """Query journal ranks for multiple publication names through paper-rank-proxy.
+
+    Args:
+        publication_names: Publication names. Empty names are skipped before sending to the proxy.
+        force_refresh: Whether to bypass the proxy cache.
+    Returns:
+        Ordered rank results matching the non-empty input names.
+    """
+    return await journal_rank_client.get_ranks_batch(
+        publication_names=publication_names,
+        force_refresh=force_refresh,
+    )
+
+
+@mcp.tool()
+async def list_literature_sources() -> Dict[str, Any]:
+    """List EE workflow source capabilities and current configuration state."""
+    return list_literature_source_status(
+        scopus_client=scopus_client,
+        abstract_client=elsevier_abstract_client,
+        rank_client=journal_rank_client,
+    )
+
+
+@mcp.tool()
+async def check_ee_paper_search_config() -> Dict[str, Any]:
+    """Return a redacted configuration health summary for the EE workflow."""
+    source_status = list_literature_source_status(
+        scopus_client=scopus_client,
+        abstract_client=elsevier_abstract_client,
+        rank_client=journal_rank_client,
+    )
+    rank_proxy_health = await journal_rank_client.check_health()
+    result = {
+        "elsevier_api_key_configured": scopus_client.is_configured(),
+        "rank_proxy_url_configured": journal_rank_client.proxy_url_configured,
+        "rank_proxy_token_configured": bool(journal_rank_client.token),
+        "rank_proxy_configured": journal_rank_client.is_configured(),
+        "rank_proxy_health": rank_proxy_health.get("status", "unknown"),
+        "sources": source_status["sources"],
+    }
+    if rank_proxy_health.get("status") != "ok" and rank_proxy_health.get("detail"):
+        result["rank_proxy_health_detail"] = rank_proxy_health["detail"]
+    return result
 
 
 # Tool definitions

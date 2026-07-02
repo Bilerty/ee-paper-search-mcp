@@ -10,9 +10,6 @@ from .config import get_env
 from .academic_platforms.scopus import _as_int
 
 
-DEFAULT_RANK_PROXY_URL = "https://paper-rank.battmng.top"
-
-
 def _rank_error_kind(status_code: int) -> str:
     if status_code == 401:
         return "missing_auth"
@@ -47,12 +44,12 @@ class JournalRankClient:
         configured_proxy_url = get_env("RANK_PROXY_URL", "").strip()
         raw_proxy_url = proxy_url if proxy_url is not None else configured_proxy_url
         self.proxy_url_configured = bool(raw_proxy_url and str(raw_proxy_url).strip())
-        self.proxy_url = (raw_proxy_url or DEFAULT_RANK_PROXY_URL).rstrip("/")
+        self.proxy_url = (raw_proxy_url or "").rstrip("/")
         self.token = (token if token is not None else get_env("RANK_PROXY_TOKEN", "")).strip()
         self.timeout_seconds = timeout_seconds or _as_int(get_env("RANK_PROXY_TIMEOUT_SECONDS", "20"), 20)
 
     def is_configured(self) -> bool:
-        return bool(self.proxy_url and self.token)
+        return bool(self.proxy_url_configured and self.token)
 
     async def check_health(self) -> dict[str, Any]:
         if not self.proxy_url_configured:

@@ -65,12 +65,13 @@ Minimal `.env` for the EE workflow:
 
 ```dotenv
 PAPER_SEARCH_MCP_ELSEVIER_API_KEY=
-PAPER_SEARCH_MCP_RANK_PROXY_URL=https://paper-rank.battmng.top
+PAPER_SEARCH_MCP_RANK_PROXY_URL=https://your-rank-proxy.example.com
 PAPER_SEARCH_MCP_RANK_PROXY_TOKEN=
 PAPER_SEARCH_MCP_UNPAYWALL_EMAIL=
 ```
 
 Do not put `EASYSCHOLAR_SECRET_KEY` in this MCP project. EasyScholar access belongs only inside the deployed `paper-rank-proxy` service.
+The rank proxy URL and token must both be configured explicitly; the MCP backend does not use a built-in default rank service address.
 
 ## Project Principles
 
@@ -159,6 +160,8 @@ All keys are **optional** unless noted. Configure them in `.env` (preferred) or 
 | `PAPER_SEARCH_MCP_GOOGLE_SCHOLAR_PROXY_URL` | Google Scholar | Optional | Your HTTP/HTTPS proxy URL — bypasses bot-detection |
 | `PAPER_SEARCH_MCP_DOAJ_API_KEY` | DOAJ | Optional | Free at [doaj.org](https://doaj.org/apply-for-api-key/) — raises hourly rate limit |
 | `PAPER_SEARCH_MCP_ZENODO_ACCESS_TOKEN` | Zenodo | Optional | Free at [zenodo.org](https://zenodo.org/account/settings/applications/) — required for private records |
+| `PAPER_SEARCH_MCP_RANK_PROXY_URL` | paper-rank-proxy | **Yes** for journal rank lookup | URL of your deployed rank proxy, for example `https://paper-rank.example.com` |
+| `PAPER_SEARCH_MCP_RANK_PROXY_TOKEN` | paper-rank-proxy | **Yes** for journal rank lookup | Bearer token configured on your deployed rank proxy |
 | `PAPER_SEARCH_MCP_IEEE_API_KEY` | IEEE Xplore | **Required to activate** | Free at [developer.ieee.org](https://developer.ieee.org/) |
 | `PAPER_SEARCH_MCP_ACM_API_KEY` | ACM DL | **Required to activate** | See [libraries.acm.org/digital-library/acm-open](https://libraries.acm.org/digital-library/acm-open) |
 
@@ -516,6 +519,8 @@ PAPER_SEARCH_MCP_CORE_API_KEY=
 PAPER_SEARCH_MCP_SEMANTIC_SCHOLAR_API_KEY=
 PAPER_SEARCH_MCP_ZENODO_ACCESS_TOKEN=
 PAPER_SEARCH_MCP_GOOGLE_SCHOLAR_PROXY_URL=
+PAPER_SEARCH_MCP_RANK_PROXY_URL=https://your-rank-proxy.example.com
+PAPER_SEARCH_MCP_RANK_PROXY_TOKEN=
 PAPER_SEARCH_MCP_IEEE_API_KEY=
 PAPER_SEARCH_MCP_ACM_API_KEY=
 ```

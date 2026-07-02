@@ -15,6 +15,17 @@ class TestJournalRankClient(unittest.TestCase):
 
         self.assertEqual(result["status"], "not_configured")
 
+    def test_missing_proxy_url_is_not_configured_even_with_token(self):
+        client = JournalRankClient(proxy_url="", token="rank-token")
+
+        rank_result = asyncio.run(client.get_rank("Applied Energy"))
+        batch_result = asyncio.run(client.get_ranks_batch(["Applied Energy"]))
+
+        self.assertFalse(client.is_configured())
+        self.assertEqual(client.proxy_url, "")
+        self.assertEqual(rank_result["status"], "not_configured")
+        self.assertEqual(batch_result["status"], "not_configured")
+
     def test_get_rank_uses_bearer_token_and_publication_name(self):
         captured = {}
 
